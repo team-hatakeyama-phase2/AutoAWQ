@@ -610,6 +610,13 @@ class AwqQuantizer:
                 "block_sparse_moe": layer.block_sparse_moe,
             }
 
+        # FIXME: Workaround for Tanuki to use block_sparse_moe input features
+        if self.awq_model.model_type == "Tanuki":
+            named_linears = {
+                **named_linears,
+                "block_sparse_moe": layer.block_sparse_moe,
+            }
+
         if self.awq_model.model_type == "deepseek_v2":
             named_linears = {
                 **named_linears,
