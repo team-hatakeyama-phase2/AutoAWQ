@@ -30,6 +30,7 @@ class FusedSparseMoeBlock(torch.nn.Module):
         # router_logits: (batch * sequence_length, n_experts)
         router_logits = self.gate(hidden_states)
 
+
         final_hidden_states = apply_moe_weights(
             self.ws,
             self.w2s,
@@ -40,6 +41,44 @@ class FusedSparseMoeBlock(torch.nn.Module):
         )
 
         return final_hidden_states.view(batch_size, sequence_length, hidden_dim)
+
+
+
+class FusedSparseMoeTanukiBlock(torch.nn.Module):
+    def __init__(
+        self,
+        top_k,
+        gate,
+        ws,
+        w2s,
+    ):
+        super().__init__()
+        self.gate = gate
+        self.top_k = top_k
+        self.ws = ws
+        self.w2s = w2s
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        batch_size, sequence_length, hidden_dim = hidden_states.shape
+        hidden_states = hidden_states.view(-1, hidden_dim)
+
+        # router_logits: (batch * sequence_length, n_experts)
+        router_logits = self.gate(hidden_states)
+        mean = router_logits.mean(dim=-1, keepdim=True)
+        std = router_logits.std(dim=-1, keepdim=True)
+        router_logits = (router_logits - mean) / (std + 1e-5)
+
+        final_hidden_states = apply_moe_weights(
+            self.ws,
+            self.w2s,
+            hidden_states,
+            router_logits,
+            self.top_k,
+            renormalize=True,
+        )
+
+        return final_hidden_states.view(batch_size, sequence_length, hidden_dim)
+
 
 
 def apply_moe_weights(
