@@ -14,6 +14,7 @@ from awq.modules.fused.block import (
     Phi3Block,
     CohereBlock,
     Gemma2LikeBlock,
+    TanukiBlock
 )
 
 
@@ -78,7 +79,7 @@ class TanukiModel(nn.Module):
         super().__init__()
         self.vocab_size = vocab_size
         self.embedding = embedding
-        self.blocks: List[MixtralBlock] = nn.ModuleList(blocks)
+        self.blocks: List[TanukiBlock] = nn.ModuleList(blocks)
         self.norm = norm
         self.last_forward_num_tokens = 0
 
